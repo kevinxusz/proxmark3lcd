@@ -1,0 +1,14 @@
+Release 13.4 - xst O.87xd (lin64)
+Copyright (c) 1995-2011 Xilinx, Inc.  All rights reserved.
+--> 
+ERROR:Xst:1817 - Invalid target speed '-6'.
+
+--> 
+
+
+Total memory usage is 564512 kilobytes
+
+Number of errors   :    1 (   0 filtered)
+Number of warnings :    0 (   0 filtered)
+Number of infos    :    0 (   0 filtered)
+
