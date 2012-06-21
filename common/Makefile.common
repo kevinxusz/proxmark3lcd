@@ -99,7 +99,8 @@ $(OBJDIR)/%.s19: $(OBJDIR)/%.elf
 # version.c should be remade on every compilation
 .PHONY: version.c
 version.c: default_version.c
-	perl ../tools/mkversion.pl .. > $@ || $(COPY) $^ $@ 
+#	perl ../tools/mksvnversion.pl .. > $@ || $(COPY) $^ $@ 
+	perl ../tools/mkgitversion.pl .. > $@ || $(COPY) $^ $@ 
 
 # Automatic dependency generation
 DEPENDENCY_FILES = $(patsubst %.c,$(OBJDIR)/%.d,$(notdir $(THUMBSRC))) \
