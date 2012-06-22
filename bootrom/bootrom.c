@@ -218,10 +218,10 @@ void BootROM(void)
     // the unused pins, though.
     AT91C_BASE_PIOA->PIO_PPUDR =
     	GPIO_USB_PU			|
-		GPIO_LED_A			|
-		GPIO_LED_B			|
-		GPIO_LED_C			|
-		GPIO_LED_D			|
+		GPIO_LED_A		|
+		GPIO_LED_B		|
+		GPIO_LED_C		|
+		GPIO_LED_D		|
 		GPIO_FPGA_DIN		|
 		GPIO_FPGA_DOUT		|
 		GPIO_FPGA_CCLK		|
@@ -232,23 +232,23 @@ void BootROM(void)
 		GPIO_MUXSEL_HIRAW	|
 		GPIO_MUXSEL_LOPKD	|
 		GPIO_MUXSEL_LORAW	|
-		GPIO_RELAY			|
+		GPIO_RELAY		|
 		GPIO_NVDD_ON;
 		// (and add GPIO_FPGA_ON)
 	// These pins are outputs
     AT91C_BASE_PIOA->PIO_OER =
     	GPIO_LED_A			|
-		GPIO_LED_B			|
-		GPIO_LED_C			|
-		GPIO_LED_D			|
-		GPIO_RELAY			|
+		GPIO_LED_B		|
+		GPIO_LED_C		|
+		GPIO_LED_D		|
+		GPIO_RELAY		|
 		GPIO_NVDD_ON;
 	// PIO controls the following pins
     AT91C_BASE_PIOA->PIO_PER =
     	GPIO_USB_PU			|
-		GPIO_LED_A			|
-		GPIO_LED_B			|
-		GPIO_LED_C			|
+		GPIO_LED_A		|
+		GPIO_LED_B		|
+		GPIO_LED_C		|
 		GPIO_LED_D;
 
     USB_D_PLUS_PULLUP_OFF();
