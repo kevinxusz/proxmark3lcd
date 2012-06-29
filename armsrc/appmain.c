@@ -317,7 +317,7 @@ extern char *_bootphase1_version_pointer, _flash_start, _flash_end;
 void SendVersion(void)
 {
 	char temp[48]; /* Limited data payload in USB packets */
-	DbpString("Prox/RFID mark3 RFID instrument");
+	DbpString("Proxmark3 RFID instrument");
 
 	/* Try to find the bootrom version information. Expect to find a pointer at
 	 * symbol _bootphase1_version_pointer, perform slight sanity checks on the
@@ -325,7 +325,7 @@ void SendVersion(void)
 	 */
 	char *bootrom_version = *(char**)&_bootphase1_version_pointer;
 	if( bootrom_version < &_flash_start || bootrom_version >= &_flash_end ) {
-		DbpString("bootrom version information appears invalid");
+		DbpString("Bootrom version information appears invalid");
 	} else {
 		FormatVersionInformation(temp, sizeof(temp), "bootrom: ", bootrom_version);
 		DbpString(temp);

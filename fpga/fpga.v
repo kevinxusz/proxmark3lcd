@@ -22,35 +22,37 @@
 `include "util.v"
 
 module fpga(
-	spcki, miso, mosi, ncs,
-	pck0i, ck_1356meg, ck_1356megb,
+	spck, miso, mosi, ncs,
+	pck0, ck_1356meg, ck_1356megb,
 	pwr_lo, pwr_hi, pwr_oe1, pwr_oe2, pwr_oe3, pwr_oe4,
 	adc_d, adc_clk, adc_noe,
 	ssp_frame, ssp_din, ssp_dout, ssp_clk,
 	cross_hi, cross_lo,
+	mux_lo, mux_hi,
 	dbg
 );
-	input spcki, mosi, ncs;
+	input spck, mosi, ncs;
 	output miso;
-	input pck0i, ck_1356meg, ck_1356megb;
+	input pck0, ck_1356meg, ck_1356megb;
 	output pwr_lo, pwr_hi, pwr_oe1, pwr_oe2, pwr_oe3, pwr_oe4;
 	input [7:0] adc_d;
 	output adc_clk, adc_noe;
 	input ssp_dout;
 	output ssp_frame, ssp_din, ssp_clk;
 	input cross_hi, cross_lo;
+	output mux_lo, mux_hi;
 	output dbg;
 
 //assign pck0 = pck0i;
-	IBUFG #(.IOSTANDARD("DEFAULT") ) pck0b(
-		.O(pck0),
-		.I(pck0i)
-	);
+//	IBUFG #(.IOSTANDARD("DEFAULT") ) pck0b(
+//		.O(pck0),
+//		.I(pck0i)
+//	);
 //assign spck = spcki;
-	IBUFG #(.IOSTANDARD("DEFAULT") ) spckb(
-		.O(spck),
-		.I(spcki)
-	);
+//	IBUFG #(.IOSTANDARD("DEFAULT") ) spckb(
+//		.O(spck),
+//		.I(spcki)
+//	);
 //-----------------------------------------------------------------------------
 // The SPI receiver. This sets up the configuration word, which the rest of
 // the logic looks at to determine how to connect the A/D and the coil
@@ -88,6 +90,9 @@ assign major_mode = conf_word[7:5];
 // For the low-frequency configuration:
 wire lo_is_125khz;
 assign lo_is_125khz = conf_word[3];
+
+assign mux_hi = (!major_mode[2] && major_mode[1]) || (major_mode[2] && !major_mode[1]);
+assign mux_lo = ~mux_hi;
 
 // For the high-frequency transmit configuration: modulation depth, either
 // 100% (just quite driving antenna, steady LOW), or shallower (tri-state

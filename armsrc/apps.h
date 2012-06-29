@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
 typedef unsigned char byte_t;
 
 // The large multi-purpose buffer, typically used to hold A/D samples,
@@ -50,22 +51,25 @@ void FpgaWriteConfWord(uint8_t v);
 void FpgaDownloadAndGo(void);
 void FpgaGatherVersion(char *dst, int len);
 void FpgaSetupSsc(void);
-void SetupSpi(int mode);
 void FpgaSetupSscDma(uint8_t *buf, int len);
 void SetAdcMuxFor(uint32_t whichGpio);
 
+/// spi.h
+unsigned int spi_com(unsigned int channel, unsigned int dout, unsigned char last);
+void SetupSpi(int mode);
+
 // Definitions for the FPGA commands.
-#define FPGA_CMD_SET_CONFREG						(1<<12)
-#define FPGA_CMD_SET_DIVISOR						(2<<12)
+#define FPGA_CMD_SET_CONFREG					(1<<12)
+#define FPGA_CMD_SET_DIVISOR					(2<<12)
 // Definitions for the FPGA configuration word.
-#define FPGA_MAJOR_MODE_LF_READER					(0<<5)
+#define FPGA_MAJOR_MODE_LF_READER				(0<<5)
 #define FPGA_MAJOR_MODE_LF_SIMULATOR				(1<<5)
 #define FPGA_MAJOR_MODE_HF_READER_TX				(2<<5)
 #define FPGA_MAJOR_MODE_HF_READER_RX_XCORR			(3<<5)
 #define FPGA_MAJOR_MODE_HF_SIMULATOR				(4<<5)
 #define FPGA_MAJOR_MODE_HF_ISO14443A				(5<<5)
-#define FPGA_MAJOR_MODE_LF_PASSTHRU					(6<<5)
-#define FPGA_MAJOR_MODE_OFF							(7<<5)
+#define FPGA_MAJOR_MODE_LF_PASSTHRU				(6<<5)
+#define FPGA_MAJOR_MODE_OFF					(7<<5)
 // Options for the HF reader, tx to tag
 #define FPGA_HF_READER_TX_SHALLOW_MOD				(1<<0)
 // Options for the HF reader, correlating against rx from tag
@@ -77,7 +81,7 @@ void SetAdcMuxFor(uint32_t whichGpio);
 #define FPGA_HF_SIMULATOR_MODULATE_BPSK				(1<<0)
 #define FPGA_HF_SIMULATOR_MODULATE_212K				(2<<0)
 // Options for ISO14443A
-#define FPGA_HF_ISO14443A_SNIFFER					(0<<0)
+#define FPGA_HF_ISO14443A_SNIFFER				(0<<0)
 #define FPGA_HF_ISO14443A_TAGSIM_LISTEN				(1<<0)
 #define FPGA_HF_ISO14443A_TAGSIM_MOD				(2<<0)
 #define FPGA_HF_ISO14443A_READER_LISTEN				(3<<0)
@@ -137,5 +141,35 @@ void SetDebugIso15693(uint32_t flag);
 void RAMFUNC SnoopIClass(void);
 
 /// util.h
+#define LED_RED 1
+#define LED_ORANGE 2
+#define LED_GREEN 4
+#define LED_RED2 8
+#define BUTTON_HOLD 1
+#define BUTTON_NO_CLICK 0
+#define BUTTON_SINGLE_CLICK -1
+#define BUTTON_DOUBLE_CLICK -2
+#define BUTTON_ERROR -99
+int strlen(const char *str);
+void *memcpy(void *dest, const void *src, int len);
+void *memset(void *dest, int c, int len);
+int memcmp(const void *av, const void *bv, int len);
+char *strncat(char *dest, const char *src, unsigned int n);
+void num_to_bytes(uint64_t n, size_t len, byte_t* dest);
+uint64_t bytes_to_num(byte_t* src, size_t len);
+
+void LED(int led, int ms);
+void LEDsoff();
+int BUTTON_CLICKED(int ms);
+int BUTTON_HELD(int ms);
+void FormatVersionInformation(char *dst, int len, const char *prefix, void *version_information);
+uint32_t get_fattime();
+
+// pwm.c
+void PWMC_SetDutyCycle(uint8_t channel, uint16_t duty);
+void PWMC_SetPeriod(uint8_t channel, uint16_t period);
+void PWMC_ConfigureChannel(uint8_t channel, uint8_t prescaler, uint8_t alignment, uint8_t polarity, uint32_t mode);
+void PWMC_Beep(uint8_t channel, uint32_t frequency, uint32_t duration);
+void PWMC_BeepN(uint8_t channel, uint32_t frequency);
 
 #endif

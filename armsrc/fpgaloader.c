@@ -8,88 +8,10 @@
 // Routines to load the FPGA image, and then to configure the FPGA's major
 // mode once it is configured.
 //-----------------------------------------------------------------------------
-
 #include "proxmark3.h"
 #include "apps.h"
 #include "util.h"
 #include "string.h"
-
-//-----------------------------------------------------------------------------
-// Set up the Serial Peripheral Interface as master
-// Used to write the FPGA config word
-// May also be used to write to other SPI attached devices like an LCD
-//-----------------------------------------------------------------------------
-void SetupSpi(int mode)
-{
-	// PA10 -> SPI_NCS2 chip select (LCD)
-	// PA11 -> SPI_NCS0 chip select (FPGA)
-	// PA12 -> SPI_MISO Master-In Slave-Out
-	// PA13 -> SPI_MOSI Master-Out Slave-In
-	// PA14 -> SPI_SPCK Serial Clock
-
-	// Disable PIO control of the following pins, allows use by the SPI peripheral
-	AT91C_BASE_PIOA->PIO_PDR =
-		GPIO_NCS0	|
-		GPIO_NCS2 	|
-		GPIO_MISO	|
-		GPIO_MOSI	|
-		GPIO_SPCK;
-
-	AT91C_BASE_PIOA->PIO_ASR =
-		GPIO_NCS0	|
-		GPIO_MISO	|
-		GPIO_MOSI	|
-		GPIO_SPCK;
-
-	AT91C_BASE_PIOA->PIO_BSR = GPIO_NCS2;
-
-	//enable the SPI Peripheral clock
-	AT91C_BASE_PMC->PMC_PCER = (1<<AT91C_ID_SPI);
-	// Enable SPI
-	AT91C_BASE_SPI->SPI_CR = AT91C_SPI_SPIEN;
-
-	switch (mode) {
-		case SPI_FPGA_MODE:
-			AT91C_BASE_SPI->SPI_MR =
-				( 0 << 24)	|	// Delay between chip selects (take default: 6 MCK periods)
-				(14 << 16)	|	// Peripheral Chip Select (selects FPGA SPI_NCS0 or PA11)
-				( 0 << 7)	|	// Local Loopback Disabled
-				( 1 << 4)	|	// Mode Fault Detection disabled
-				( 0 << 2)	|	// Chip selects connected directly to peripheral
-				( 0 << 1) 	|	// Fixed Peripheral Select
-				( 1 << 0);		// Master Mode
-			AT91C_BASE_SPI->SPI_CSR[0] =
-				( 1 << 24)	|	// Delay between Consecutive Transfers (32 MCK periods)
-				( 1 << 16)	|	// Delay Before SPCK (1 MCK period)
-				( 6 << 8)	|	// Serial Clock Baud Rate (baudrate = MCK/6 = 24Mhz/6 = 4M baud
-				( 8 << 4)	|	// Bits per Transfer (16 bits)
-				( 0 << 3)	|	// Chip Select inactive after transfer
-				( 1 << 1)	|	// Clock Phase data captured on leading edge, changes on following edge
-				( 0 << 0);		// Clock Polarity inactive state is logic 0
-			break;
-		case SPI_LCD_MODE:
-			AT91C_BASE_SPI->SPI_MR =
-				( 0 << 24)	|	// Delay between chip selects (take default: 6 MCK periods)
-				(11 << 16)	|	// Peripheral Chip Select (selects LCD SPI_NCS2 or PA10)
-				( 0 << 7)	|	// Local Loopback Disabled
-				( 1 << 4)	|	// Mode Fault Detection disabled
-				( 0 << 2)	|	// Chip selects connected directly to peripheral
-				( 0 << 1) 	|	// Fixed Peripheral Select
-				( 1 << 0);		// Master Mode
-			AT91C_BASE_SPI->SPI_CSR[2] =
-				( 1 << 24)	|	// Delay between Consecutive Transfers (32 MCK periods)
-				( 1 << 16)	|	// Delay Before SPCK (1 MCK period)
-				( 6 << 8)	|	// Serial Clock Baud Rate (baudrate = MCK/6 = 24Mhz/6 = 4M baud
-				( 1 << 4)	|	// Bits per Transfer (9 bits)
-				( 0 << 3)	|	// Chip Select inactive after transfer
-				( 1 << 1)	|	// Clock Phase data captured on leading edge, changes on following edge
-				( 0 << 0);		// Clock Polarity inactive state is logic 0
-			break;
-		default:				// Disable SPI
-			AT91C_BASE_SPI->SPI_CR = AT91C_SPI_SPIDIS;
-			break;
-	}
-}
 
 //-----------------------------------------------------------------------------
 // Set up the synchronous serial port, with the one set of options that we
@@ -140,9 +62,13 @@ void FpgaSetupSscDma(uint8_t *buf, int len)
 {
 	AT91C_BASE_PDC_SSC->PDC_RPR = (uint32_t) buf;
 	AT91C_BASE_PDC_SSC->PDC_RCR = len;
+
+	// next buffer pointer
 	AT91C_BASE_PDC_SSC->PDC_RNPR = (uint32_t) buf;
 	AT91C_BASE_PDC_SSC->PDC_RNCR = len;
-	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN;
+
+	// enable rx transfer
+	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN | AT91C_PDC_TXTDIS;
 }
 
 static void DownloadFPGA_byte(unsigned char w)
@@ -164,9 +90,9 @@ static void DownloadFPGA(const char *FpgaImage, int FpgaImageLen, int byterevers
 {
 	int i=0;
 
-	AT91C_BASE_PIOA->PIO_OER = GPIO_FPGA_ON;
-	AT91C_BASE_PIOA->PIO_PER = GPIO_FPGA_ON;
-	HIGH(GPIO_FPGA_ON);		// ensure everything is powered on
+	AT91C_BASE_PIOA->PIO_OER = GPIO_NVDD_ON;
+	AT91C_BASE_PIOA->PIO_PER = GPIO_NVDD_ON;
+	HIGH(GPIO_NVDD_ON);		// ensure everything is powered on
 
 	SpinDelay(50);
 
@@ -352,9 +278,9 @@ void FpgaGatherVersion(char *dst, int len)
 	unsigned int fpga_info_len;
 	dst[0] = 0;
 	if(!bitparse_find_section('e', &fpga_info, &fpga_info_len)) {
-		strncat(dst, "FPGA image: legacy image without version information", len-1);
+		strncat(dst, "fpga: legacy image without version information", len-1);
 	} else {
-		strncat(dst, "FPGA image built", len-1);
+		strncat(dst, "fpga: ", len-1);
 		/* USB packets only have 48 bytes data payload, so be terse */
 #if 0
 		if(bitparse_find_section('a', &fpga_info, &fpga_info_len) && fpga_info[fpga_info_len-1] == 0 ) {
@@ -405,6 +331,7 @@ void FpgaWriteConfWord(uint8_t v)
 //-----------------------------------------------------------------------------
 void SetAdcMuxFor(uint32_t whichGpio)
 {
+	return; // this function no longer used
 	AT91C_BASE_PIOA->PIO_OER =
 		GPIO_MUXSEL_HIPKD |
 		GPIO_MUXSEL_LOPKD |

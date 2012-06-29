@@ -31,8 +31,8 @@
 void num_to_bytes(uint64_t n, size_t len, uint8_t* dest);
 uint64_t bytes_to_num(uint8_t* src, size_t len);
 
-void SpinDelay(int ms);
-void SpinDelayUs(int us);
+void SpinDelay(unsigned int ms);
+void SpinDelayUs(unsigned int us);
 void LED(int led, int ms);
 void LEDsoff();
 int BUTTON_CLICKED(int ms);
