@@ -29,6 +29,7 @@ THUMBSRC = start.c \
 	string.c \
 	usb.c \
 	spi.c \
+	pwm.c \
 	msd.c
 
 # These are to be compiled in ARM mode

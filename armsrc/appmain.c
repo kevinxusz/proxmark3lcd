@@ -916,6 +916,9 @@ void  __attribute__((noreturn)) AppMain(void)
 		AT91C_SSC_RXDIS |
 		AT91C_SSC_TXDIS;
 
+	// Beep!
+	PWMC_Beep(1,10000,50);
+
 	// Load the FPGA image, which we have stored in our flash.
 	FpgaDownloadAndGo();
 

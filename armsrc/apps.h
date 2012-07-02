@@ -71,6 +71,13 @@ void FpgaSetupSsc(void);
 void FpgaSetupSscDma(uint8_t *buf, int len);
 void SetAdcMuxFor(uint32_t whichGpio);
 
+/// pwm.h
+void PWMC_SetDutyCycle(uint8_t channel, uint16_t duty);
+void PWMC_SetPeriod(uint8_t channel, uint16_t period);
+void PWMC_ConfigureChannel(uint8_t channel, uint8_t prescaler, uint8_t alignment, uint8_t polarity, uint32_t mode);
+void PWMC_Beep(uint8_t channel, uint32_t frequency, uint32_t duration);
+void PWMC_BeepN(uint8_t channel, uint32_t frequency);
+
 /// spi.h
 unsigned int spi_com(unsigned int channel, unsigned int dout, unsigned char last);
 void SetupSpi(int mode);
