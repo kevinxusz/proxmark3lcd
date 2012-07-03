@@ -37,7 +37,6 @@ start:
 	// message
 	printf("-------------------------------------------------------------------------\n");
 	printf("Executing command. It may take up to 30 min.\n");
-	printf("Press the key on proxmark3 device to abort proxmark3.\n");
 	printf("Press the key on the proxmark3 device to abort both proxmark3 and client.\n");
 	printf("-------------------------------------------------------------------------\n");
 	

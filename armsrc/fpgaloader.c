@@ -293,11 +293,11 @@ void FpgaGatherVersion(char *dst, int len)
 		}
 #endif
 		if(bitparse_find_section('c', &fpga_info, &fpga_info_len) && fpga_info[fpga_info_len-1] == 0 ) {
-			strncat(dst, " on ", len-1);
+			strncat(dst, "synthesized ", len-1);
 			strncat(dst, fpga_info, len-1);
 		}
 		if(bitparse_find_section('d', &fpga_info, &fpga_info_len) && fpga_info[fpga_info_len-1] == 0 ) {
-			strncat(dst, " at ", len-1);
+			strncat(dst, " ", len-1);
 			strncat(dst, fpga_info, len-1);
 		}
 	}

@@ -122,8 +122,10 @@ void SimulateTagLowFrequency(int period, int gap, int ledcontrol);
 void CmdHIDsimTAG(int hi, int lo, int ledcontrol);
 void CmdHIDdemodFSK(int findone, int *high, int *low, int ledcontrol);
 void SimulateTagLowFrequencyBidir(int divisor, int max_bitlen);
-void CopyHIDtoT5567(int hi, int lo); // Clone an HID card to T5557/T5567
+void CopyHIDtoT55x7(int hi, int lo); // Clone an HID card to T5557/T5567
 void WriteEM410x(uint32_t card, uint32_t id_hi, uint32_t id_lo);
+void CopyIndala64toT55x7(int hi, int lo); // Clone Indala 64-bit tag by UID to T55x7
+void CopyIndala224toT55x7(int uid1, int uid2, int uid3, int uid4, int uid5, int uid6, int uid7); // Clone Indala 224-bit tag by UID to T55x7
 
 /// iso14443.h
 void SimulateIso14443Tag(void);
@@ -162,9 +164,9 @@ void MifareECardLoad(uint32_t arg0, uint32_t arg1, uint32_t arg2, uint8_t *datai
 void RecordRawAdcSamplesIso15693(void);
 void AcquireRawAdcSamplesIso15693(void);
 void ReaderIso15693(uint32_t parameter);	// Simulate an ISO15693 reader - greg
-void SimTagIso15693(uint32_t parameter);	// simulate an ISO15693 tag - greg
-void BruteforceIso15693Afi(uint32_t speed); // find an AFI of a tag - atrox
-void DirectTag15693Command(uint32_t datalen,uint32_t speed, uint32_t recv, uint8_t data[]); // send arbitrary commands from CLI - atrox 
+void SimTagIso15693(uint32_t parameter);	// Simulate an ISO15693 tag - greg
+void BruteforceIso15693Afi(uint32_t speed); 	// Find an AFI of a tag - atrox
+void DirectTag15693Command(uint32_t datalen,uint32_t speed, uint32_t recv, uint8_t data[]); // Send arbitrary commands from CLI - atrox 
 void SetDebugIso15693(uint32_t flag);
 
 /// iclass.h
@@ -172,36 +174,13 @@ void RAMFUNC SnoopIClass(void);
 void SimulateIClass(uint8_t arg0, uint8_t *datain);
 void ReaderIClass(uint8_t arg0);
 
-/// util.h
-#define LED_RED 1
-#define LED_ORANGE 2
-#define LED_GREEN 4
-#define LED_RED2 8
-#define BUTTON_HOLD 1
-#define BUTTON_NO_CLICK 0
-#define BUTTON_SINGLE_CLICK -1
-#define BUTTON_DOUBLE_CLICK -2
-#define BUTTON_ERROR -99
-int strlen(const char *str);
-void *memcpy(void *dest, const void *src, int len);
-void *memset(void *dest, int c, int len);
-int memcmp(const void *av, const void *bv, int len);
-char *strncat(char *dest, const char *src, unsigned int n);
-void num_to_bytes(uint64_t n, size_t len, byte_t* dest);
-uint64_t bytes_to_num(byte_t* src, size_t len);
-
-void LED(int led, int ms);
-void LEDsoff();
-int BUTTON_CLICKED(int ms);
-int BUTTON_HELD(int ms);
-void FormatVersionInformation(char *dst, int len, const char *prefix, void *version_information);
-uint32_t get_fattime();
-
-// pwm.c
+/// pwm.c
 void PWMC_SetDutyCycle(uint8_t channel, uint16_t duty);
 void PWMC_SetPeriod(uint8_t channel, uint16_t period);
 void PWMC_ConfigureChannel(uint8_t channel, uint8_t prescaler, uint8_t alignment, uint8_t polarity, uint32_t mode);
 void PWMC_Beep(uint8_t channel, uint32_t frequency, uint32_t duration);
 void PWMC_BeepN(uint8_t channel, uint32_t frequency);
+
+/// util.h
 
 #endif

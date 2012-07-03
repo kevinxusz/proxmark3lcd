@@ -1,6 +1,7 @@
 #include "proxmark3.h"
 #include "apps.h"
 #include "util.h"
+#include "string.h"
 #include "msd.h"
 
 unsigned char ver2_card = FALSE;  //!< Flag to indicate version 2.0 SD card

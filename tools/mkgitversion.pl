@@ -26,7 +26,7 @@ if(open(GITLOG, "git log -n 1 |")) {
 
 $compiletime[4] += 1;
 $compiletime[5] += 1900;
-my $ctime = sprintf("%6\$04i-%5\$02i-%4\$02i %3\$02i:%2\$02i:%1\$02i", @compiletime);
+my $ctime = sprintf("%6\$04i/%5\$02i/%4\$02i %3\$02i:%2\$02i:%1\$02i", @compiletime);
 $gitversion = substr($gitversion, 0, 10);
 
 print <<EOF
