@@ -17,8 +17,13 @@ Other resources:
 I had a lot of trouble with flashing the device initially but ended up having a lot of success using a [Bus Pirate](http://dangerousprototypes.com/docs/Bus_Pirate) and OpenOCD. An example configuration file is present in tools/. Once bootrom.elf and fullimage.elf are built, it is possible to use the following commands in the telnet interface to flash the device:
 
 \> halt
+
 \> flash erase\_sector 0 0 15
+
 \> flash erase\_sector 1 0 15
+
 \> flash write\_image ../armsrc/obj/fullimage.elf
+
 \> flash write\_image ../bootrom/obj/bootrom.elf
+
 
