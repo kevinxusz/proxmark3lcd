@@ -706,7 +706,7 @@ void UsbPacketReceived(uint8_t *packet, int len)
 
 #ifdef WITH_ISO14443a
 		case CMD_SNOOP_ISO_14443a:
-			SnoopIso14443a();
+			SnoopIso14443a(c->arg[0]);
 			break;
 		case CMD_READER_ISO_14443a:
 			ReaderIso14443a(c, &ack);
@@ -752,6 +752,19 @@ void UsbPacketReceived(uint8_t *packet, int len)
 			break;
 		case CMD_MIFARE_EML_CARDLOAD:
 			MifareECardLoad(c->arg[0], c->arg[1], c->arg[2], c->d.asBytes);
+			break;
+
+		// work with "magic Chinese" card
+		case CMD_MIFARE_EML_CSETBLOCK:
+			MifareCSetBlock(c->arg[0], c->arg[1], c->arg[2], c->d.asBytes);
+			break;
+		case CMD_MIFARE_EML_CGETBLOCK:
+			MifareCGetBlock(c->arg[0], c->arg[1], c->arg[2], c->d.asBytes);
+			break;
+			
+		// mifare sniffer
+		case CMD_MIFARE_SNIFFER:
+			SniffMifare(c->arg[0]);
 			break;
 #endif
 

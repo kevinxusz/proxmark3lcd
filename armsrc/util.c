@@ -183,7 +183,7 @@ int BUTTON_HELD(int ms)
 
 // attempt at high resolution microsecond timer
 // beware: timer counts in 21.3uS increments (1024/48Mhz)
-void SpinDelayUs(unsigned int us)
+void SpinDelayUs(int us)
 {
 	int ticks = (48*us) >> 10;
 
@@ -205,7 +205,7 @@ void SpinDelayUs(unsigned int us)
 	}
 }
 
-void SpinDelay(unsigned int ms)
+void SpinDelay(int ms)
 {
   // convert to uS and call microsecond delay function
 	SpinDelayUs(ms*1000);

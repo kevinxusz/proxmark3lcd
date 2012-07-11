@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (C) 2011 Merlok
+// Copyright (C) 2011,2012 Merlok
 //
 // This code is licensed to you under the terms of the GNU GPL, version 2 or,
 // at your option, any later version. See the LICENSE.txt file for the text of
@@ -19,7 +19,7 @@ int CmdHF14AMifare(const char *Cmd)
 	uint32_t nt = 0;
 	uint64_t par_list = 0, ks_list = 0, r_key = 0;
 	uint8_t isOK = 0;
-	uint8_t keyBlock[6] = {0,0,0,0,0,0};
+	uint8_t keyBlock[8] = {0};
 
 	if (param_getchar(Cmd, 0) && param_gethex(Cmd, 0, keyBlock, 8)) {
 		PrintAndLog("Nt must include 8 HEX symbols");
@@ -37,6 +37,7 @@ start:
 	// message
 	printf("-------------------------------------------------------------------------\n");
 	printf("Executing command. It may take up to 30 min.\n");
+	printf("Press the key on proxmark3 device to abort proxmark3.\n");
 	printf("Press the key on the proxmark3 device to abort both proxmark3 and client.\n");
 	printf("-------------------------------------------------------------------------\n");
 	
@@ -82,7 +83,7 @@ start:
 	else
 	{
 		PrintAndLog("Found invalid key. ( Nt=%08x ,Trying use it to run again...", nt);	
-		c.d.asDwords[0] = nt;
+		c.arg[0] = nt;
 		goto start;
 	}
 	
@@ -1217,26 +1218,371 @@ int CmdHF14AMfEKeyPrn(const char *Cmd)
 	return 0;
 }
 
+int CmdHF14AMfCSetUID(const char *Cmd)
+{
+	uint8_t wipeCard = 0;
+	uint8_t uid[8];
+	uint8_t oldUid[8];
+	int res;
+
+	if (strlen(Cmd) < 1 || param_getchar(Cmd, 0) == 'h') {
+		PrintAndLog("Usage:  hf mf csetuid <UID 8 hex symbols> <w>");
+		PrintAndLog("sample:  hf mf csetuid 01020304 w");
+		PrintAndLog("Set UID for magic Chinese card (only works with!!!)");
+		PrintAndLog("If you want wipe card then add 'w' into command line. \n");
+		return 0;
+	}	
+
+	if (param_getchar(Cmd, 0) && param_gethex(Cmd, 0, uid, 8)) {
+		PrintAndLog("UID must include 8 HEX symbols");
+		return 1;
+	}
+
+	char ctmp = param_getchar(Cmd, 1);
+	if (ctmp == 'w' || ctmp == 'W') wipeCard = 1;
+	
+	PrintAndLog("--wipe card:%02x uid:%s", wipeCard, sprint_hex(uid, 4));
+
+	res = mfCSetUID(uid, oldUid, wipeCard);
+	if (res) {
+			PrintAndLog("Can't set UID. error=%d", res);
+			return 1;
+		}
+	
+	PrintAndLog("old UID:%s", sprint_hex(oldUid, 4));
+	return 0;
+}
+
+int CmdHF14AMfCSetBlk(const char *Cmd)
+{
+	uint8_t uid[8];
+	uint8_t memBlock[16];
+	uint8_t blockNo = 0;
+	int res;
+	memset(memBlock, 0x00, sizeof(memBlock));
+
+	if (strlen(Cmd) < 1 || param_getchar(Cmd, 0) == 'h') {
+		PrintAndLog("Usage:  hf mf csetblk <block number> <block data (32 hex symbols)>");
+		PrintAndLog("sample:  hf mf csetblk 1 01020304050607080910111213141516");
+		PrintAndLog("Set block data for magic Chinese card (only works with!!!)");
+		PrintAndLog("If you want wipe card then add 'w' into command line. \n");
+		return 0;
+	}	
+
+	blockNo = param_get8(Cmd, 0);
+	if (blockNo >= 32 * 4 + 8 * 16) {
+		PrintAndLog("Block number must be in [0..255] as in MIFARE classic.");
+		return 1;
+	}
+
+	if (param_gethex(Cmd, 1, memBlock, 32)) {
+		PrintAndLog("block data must include 32 HEX symbols");
+		return 1;
+	}
+
+	PrintAndLog("--block number:%02x data:%s", blockNo, sprint_hex(memBlock, 16));
+
+	res = mfCSetBlock(blockNo, memBlock, uid, 0, CSETBLOCK_SINGLE_OPER);
+	if (res) {
+			PrintAndLog("Can't write block. error=%d", res);
+			return 1;
+		}
+	
+	PrintAndLog("UID:%s", sprint_hex(uid, 4));
+	return 0;
+}
+
+int CmdHF14AMfCLoad(const char *Cmd)
+{
+	FILE * f;
+	char filename[20];
+	char * fnameptr = filename;
+	char buf[64];
+	uint8_t buf8[64];
+	uint8_t fillFromEmulator = 0;
+	int i, len, blockNum, flags;
+	
+	memset(filename, 0, sizeof(filename));
+	memset(buf, 0, sizeof(buf));
+
+	if (param_getchar(Cmd, 0) == 'h' || param_getchar(Cmd, 0)== 0x00) {
+		PrintAndLog("It loads magic Chinese card (only works with!!!) from the file `filename.eml`");
+		PrintAndLog("or from emulator memory (option `e`)");
+		PrintAndLog("Usage:  hf mf cload <file name w/o `.eml`>");
+		PrintAndLog("   or:  hf mf cload e ");
+		PrintAndLog(" sample: hf mf cload filename");
+		return 0;
+	}	
+
+	char ctmp = param_getchar(Cmd, 0);
+	if (ctmp == 'e' || ctmp == 'E') fillFromEmulator = 1;
+	
+	if (fillFromEmulator) {
+		flags = CSETBLOCK_INIT_FIELD + CSETBLOCK_WUPC;
+		for (blockNum = 0; blockNum < 16 * 4; blockNum += 1) {
+			if (mfEmlGetMem(buf8, blockNum, 1)) {
+				PrintAndLog("Cant get block: %d", blockNum);
+				return 2;
+			}
+			
+			if (blockNum == 2) flags = 0;
+			if (blockNum == 16 * 4 - 1) flags = CSETBLOCK_HALT + CSETBLOCK_RESET_FIELD;
+
+			if (mfCSetBlock(blockNum, buf8, NULL, 0, flags)) {
+				PrintAndLog("Cant set magic card block: %d", blockNum);
+				return 3;
+			}
+		}
+		return 0;
+	} else {
+		len = strlen(Cmd);
+		if (len > 14) len = 14;
+
+		memcpy(filename, Cmd, len);
+		fnameptr += len;
+
+		sprintf(fnameptr, ".eml"); 
+	
+		// open file
+		f = fopen(filename, "r");
+		if (f == NULL) {
+			PrintAndLog("File not found or locked.");
+			return 1;
+		}
+	
+		blockNum = 0;
+		flags = CSETBLOCK_INIT_FIELD + CSETBLOCK_WUPC;
+		while(!feof(f)){
+			memset(buf, 0, sizeof(buf));
+			fgets(buf, sizeof(buf), f);
+
+			if (strlen(buf) < 32){
+				if(strlen(buf) && feof(f))
+					break;
+				PrintAndLog("File content error. Block data must include 32 HEX symbols");
+				return 2;
+			}
+			for (i = 0; i < 32; i += 2)
+				sscanf(&buf[i], "%02x", (unsigned int *)&buf8[i / 2]);
+
+			if (blockNum == 2) flags = 0;
+			if (blockNum == 16 * 4 - 1) flags = CSETBLOCK_HALT + CSETBLOCK_RESET_FIELD;
+
+			if (mfCSetBlock(blockNum, buf8, NULL, 0, flags)) {
+				PrintAndLog("Cant set magic card block: %d", blockNum);
+				return 3;
+			}
+			blockNum++;
+		
+			if (blockNum >= 16 * 4) break;  // magic card type - mifare 1K
+		}
+		fclose(f);
+	
+		if (blockNum != 16 * 4 && blockNum != 32 * 4 + 8 * 16){
+			PrintAndLog("File content error. There must be 64 blocks");
+			return 4;
+		}
+		PrintAndLog("Loaded from file: %s", filename);
+		return 0;
+	}
+}
+
+int CmdHF14AMfCGetBlk(const char *Cmd) {
+	uint8_t memBlock[16];
+	uint8_t blockNo = 0;
+	int res;
+	memset(memBlock, 0x00, sizeof(memBlock));
+
+	if (strlen(Cmd) < 1 || param_getchar(Cmd, 0) == 'h') {
+		PrintAndLog("Usage:  hf mf cgetblk <block number>");
+		PrintAndLog("sample:  hf mf cgetblk 1");
+		PrintAndLog("Get block data from magic Chinese card (only works with!!!)\n");
+		return 0;
+	}	
+
+	blockNo = param_get8(Cmd, 0);
+	if (blockNo >= 32 * 4 + 8 * 16) {
+		PrintAndLog("Block number must be in [0..255] as in MIFARE classic.");
+		return 1;
+	}
+
+	PrintAndLog("--block number:%02x ", blockNo);
+
+	res = mfCGetBlock(blockNo, memBlock, CSETBLOCK_SINGLE_OPER);
+	if (res) {
+			PrintAndLog("Can't read block. error=%d", res);
+			return 1;
+		}
+	
+	PrintAndLog("block data:%s", sprint_hex(memBlock, 16));
+	return 0;
+}
+
+int CmdHF14AMfCGetSc(const char *Cmd) {
+	uint8_t memBlock[16];
+	uint8_t sectorNo = 0;
+	int i, res, flags;
+	memset(memBlock, 0x00, sizeof(memBlock));
+
+	if (strlen(Cmd) < 1 || param_getchar(Cmd, 0) == 'h') {
+		PrintAndLog("Usage:  hf mf cgetsc <sector number>");
+		PrintAndLog("sample:  hf mf cgetsc 0");
+		PrintAndLog("Get sector data from magic Chinese card (only works with!!!)\n");
+		return 0;
+	}	
+
+	sectorNo = param_get8(Cmd, 0);
+	if (sectorNo > 15) {
+		PrintAndLog("Sector number must be in [0..15] as in MIFARE classic.");
+		return 1;
+	}
+
+	PrintAndLog("--sector number:%02x ", sectorNo);
+
+	flags = CSETBLOCK_INIT_FIELD + CSETBLOCK_WUPC;
+	for (i = 0; i < 4; i++) {
+		if (i == 1) flags = 0;
+		if (i == 3) flags = CSETBLOCK_HALT + CSETBLOCK_RESET_FIELD;
+
+		res = mfCGetBlock(sectorNo * 4 + i, memBlock, flags);
+		if (res) {
+			PrintAndLog("Can't read block. %02x error=%d", sectorNo * 4 + i, res);
+			return 1;
+		}
+	
+		PrintAndLog("block %02x data:%s", sectorNo * 4 + i, sprint_hex(memBlock, 16));
+	}
+	return 0;
+}
+
+int CmdHF14AMfCSave(const char *Cmd) {
+
+	FILE * f;
+	char filename[20];
+	char * fnameptr = filename;
+	uint8_t fillFromEmulator = 0;
+	uint8_t buf[64];
+	int i, j, len, flags;
+	
+	memset(filename, 0, sizeof(filename));
+	memset(buf, 0, sizeof(buf));
+
+	if (param_getchar(Cmd, 0) == 'h') {
+		PrintAndLog("It saves `magic Chinese` card dump into the file `filename.eml` or `cardID.eml`");
+		PrintAndLog("or into emulator memory (option `e`)");
+		PrintAndLog("Usage:  hf mf esave [file name w/o `.eml`][e]");
+		PrintAndLog(" sample: hf mf esave ");
+		PrintAndLog("         hf mf esave filename");
+		PrintAndLog("         hf mf esave e \n");
+		return 0;
+	}	
+
+	char ctmp = param_getchar(Cmd, 0);
+	if (ctmp == 'e' || ctmp == 'E') fillFromEmulator = 1;
+
+	if (fillFromEmulator) {
+		// put into emulator
+		flags = CSETBLOCK_INIT_FIELD + CSETBLOCK_WUPC;
+		for (i = 0; i < 16 * 4; i++) {
+			if (i == 1) flags = 0;
+			if (i == 16 * 4 - 1) flags = CSETBLOCK_HALT + CSETBLOCK_RESET_FIELD;
+		
+			if (mfCGetBlock(i, buf, flags)) {
+				PrintAndLog("Cant get block: %d", i);
+				break;
+			}
+			
+			if (mfEmlSetMem(buf, i, 1)) {
+				PrintAndLog("Cant set emul block: %d", i);
+				return 3;
+			}
+		}
+		return 0;
+	} else {
+		len = strlen(Cmd);
+		if (len > 14) len = 14;
+	
+		if (len < 1) {
+			// get filename
+			if (mfCGetBlock(0, buf, CSETBLOCK_SINGLE_OPER)) {
+				PrintAndLog("Cant get block: %d", 0);
+				return 1;
+			}
+			for (j = 0; j < 7; j++, fnameptr += 2)
+				sprintf(fnameptr, "%02x", buf[j]); 
+		} else {
+			memcpy(filename, Cmd, len);
+			fnameptr += len;
+		}
+
+		sprintf(fnameptr, ".eml"); 
+	
+		// open file
+		f = fopen(filename, "w+");
+
+		// put hex
+		flags = CSETBLOCK_INIT_FIELD + CSETBLOCK_WUPC;
+		for (i = 0; i < 16 * 4; i++) {
+			if (i == 1) flags = 0;
+			if (i == 16 * 4 - 1) flags = CSETBLOCK_HALT + CSETBLOCK_RESET_FIELD;
+		
+			if (mfCGetBlock(i, buf, flags)) {
+				PrintAndLog("Cant get block: %d", i);
+				break;
+			}
+			for (j = 0; j < 16; j++)
+				fprintf(f, "%02x", buf[j]); 
+			fprintf(f,"\n");
+		}
+		fclose(f);
+	
+		PrintAndLog("Saved to file: %s", filename);
+	
+		return 0;
+	}
+}
+
+int CmdHF14AMfSniff(const char *Cmd){
+	
+	if (param_getchar(Cmd, 0) == 'h') {
+		PrintAndLog("Usage:  hf mf sniff ");
+		PrintAndLog("        sample: hf mf sniff ");
+		return 0;
+	}	
+	
+  UsbCommand c = {CMD_MIFARE_SNIFFER, {0, 0, 0}};
+  SendCommand(&c);
+
+  return 0;
+}
+
 static command_t CommandTable[] =
 {
-  {"help",		CmdHelp,				1, "This help"},
-  {"dbg",		CmdHF14AMfDbg,			0, "Set default debug mode"},
+  {"help",		CmdHelp,						1, "This help"},
+  {"dbg",			CmdHF14AMfDbg,			0, "Set default debug mode"},
   {"rdbl",		CmdHF14AMfRdBl,			0, "Read MIFARE classic block"},
   {"rdsc",		CmdHF14AMfRdSc,			0, "Read MIFARE classic sector"},
   {"dump",		CmdHF14AMfDump,			0, "Dump MIFARE classic tag to binary file"},
-  {"restore",	CmdHF14AMfRestore,		0, "Restore MIFARE classic binary file to BLANK tag"},
+  {"restore",	CmdHF14AMfRestore,	0, "Restore MIFARE classic binary file to BLANK tag"},
   {"wrbl",		CmdHF14AMfWrBl,			0, "Write MIFARE classic block"},
-  {"chk",		CmdHF14AMfChk,			0, "Test block keys"},
+  {"chk",			CmdHF14AMfChk,			0, "Test block keys"},
   {"mifare",	CmdHF14AMifare,			0, "Read parity error messages. param - <used card nonce>"},
   {"nested",	CmdHF14AMfNested,		0, "Test nested authentication"},
-  {"sim",		CmdHF14AMf1kSim,		0, "Simulate MIFARE card"},
-  {"eclr",  	CmdHF14AMfEClear,		0, "Clear simulator memory block"},
+  {"sniff",		CmdHF14AMfSniff,		0, "Sniff card-reader communication"},
+  {"sim",			CmdHF14AMf1kSim,		0, "Simulate MIFARE card"},
+  {"eclr",		CmdHF14AMfEClear,		0, "Clear simulator memory block"},
   {"eget",		CmdHF14AMfEGet,			0, "Get simulator memory block"},
   {"eset",		CmdHF14AMfESet,			0, "Set simulator memory block"},
   {"eload",		CmdHF14AMfELoad,		0, "Load from file emul dump"},
   {"esave",		CmdHF14AMfESave,		0, "Save to file emul dump"},
   {"ecfill",	CmdHF14AMfECFill,		0, "Fill simulator memory with help of keys from simulator"},
   {"ekeyprn",	CmdHF14AMfEKeyPrn,	0, "Print keys from simulator memory"},
+  {"csetuid",	CmdHF14AMfCSetUID,	0, "Set UID for magic Chinese card"},
+  {"csetblk",	CmdHF14AMfCSetBlk,	0, "Write block into magic Chinese card"},
+  {"cgetblk",	CmdHF14AMfCGetBlk,	0, "Read block from magic Chinese card"},
+  {"cgetsc",	CmdHF14AMfCGetSc,		0, "Read sector from magic Chinese card"},
+  {"cload",		CmdHF14AMfCLoad,		0, "Load dump into magic Chinese card"},
+  {"csave",		CmdHF14AMfCSave,		0, "Save dump from magic Chinese card into file or emulator"},
   {NULL, NULL, 0, NULL}
 };
 
