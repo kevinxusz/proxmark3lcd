@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Merlok, May 2011
+// Merlok, May 2011, 2012
 // Many authors, whom made it possible
 //
 // This code is licensed to you under the terms of the GNU GPL, version 2 or,
@@ -311,7 +311,7 @@ int mifare_classic_halt(struct Crypto1State *pcs, uint32_t uid)
 	// Mifare HALT
 	uint8_t* receivedAnswer = mifare_get_bigbufptr();
 
-	len = mifare_sendcmd_short(pcs, 1, 0x50, 0x00, receivedAnswer);
+	len = mifare_sendcmd_short(pcs, pcs == NULL ? 0:1, 0x50, 0x00, receivedAnswer);
 	if (len != 0) {
 		if (MF_DBGLEVEL >= 1)	Dbprintf("halt error. response len: %x", len);  
 		return 1;

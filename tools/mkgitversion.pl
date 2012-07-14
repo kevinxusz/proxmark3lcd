@@ -32,7 +32,7 @@ $gitversion = substr($gitversion, 0, 10);
 print <<EOF
 #include "proxmark3.h"
 /* Generated file, do not edit */
-struct version_information __attribute__((section(".version_information"))) version_information = {
+const struct version_information __attribute__((section(".version_information"))) version_information = {
 	VERSION_INFORMATION_MAGIC,
 	1,
 	$present,

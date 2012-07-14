@@ -23,6 +23,14 @@
 #define MEM_CHUNK               1000000
 #define NESTED_SECTOR_RETRY     10
 
+// mfCSetBlock work flags
+#define CSETBLOCK_UID 					0x01
+#define CSETBLOCK_WUPC					0x02
+#define CSETBLOCK_HALT					0x04
+#define CSETBLOCK_INIT_FIELD		0x08
+#define CSETBLOCK_RESET_FIELD		0x10
+#define CSETBLOCK_SINGLE_OPER		0x1F
+
 typedef struct fnVector { uint8_t blockNo, keyType; uint32_t uid, nt, ks1; } fnVector;
 
 typedef struct {
@@ -44,4 +52,6 @@ int mfnested(uint8_t blockNo, uint8_t keyType, uint8_t * key, uint8_t trgBlockNo
 int mfCheckKeys (uint8_t blockNo, uint8_t keyType, uint8_t keycnt, uint8_t * keyBlock, uint64_t * key);
 int mfEmlGetMem(uint8_t *data, int blockNum, int blocksCount);
 int mfEmlSetMem(uint8_t *data, int blockNum, int blocksCount);
-
+int mfCSetUID(uint8_t *uid, uint8_t *oldUID, int wantWipe);
+int mfCSetBlock(uint8_t blockNo, uint8_t *data, uint8_t *uid, int wantWipe, uint8_t params);
+int mfCGetBlock(uint8_t blockNo, uint8_t *data, uint8_t params);

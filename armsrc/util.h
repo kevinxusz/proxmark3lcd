@@ -17,6 +17,7 @@
 #define RAMFUNC __attribute((long_call, section(".ramfunc")))
 
 #define BYTEx(x, n) (((x) >> (n * 8)) & 0xff )
+#define min(a, b) (((a) > (b)) ? (b) : (a))
 
 #define LED_RED 1
 #define LED_ORANGE 2
@@ -32,8 +33,8 @@ uint32_t SwapBits(uint32_t value, int nrbits);
 void num_to_bytes(uint64_t n, size_t len, uint8_t* dest);
 uint64_t bytes_to_num(uint8_t* src, size_t len);
 
-void SpinDelay(unsigned int ms);
-void SpinDelayUs(unsigned int us);
+void SpinDelay(int ms);
+void SpinDelayUs(int us);
 void LED(int led, int ms);
 void LEDsoff();
 int BUTTON_CLICKED(int ms);
