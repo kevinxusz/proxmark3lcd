@@ -13,6 +13,8 @@
 #include "util.h"
 #include "string.h"
 
+// proxmark3lcd moved SetupSpi()
+
 //-----------------------------------------------------------------------------
 // Set up the synchronous serial port, with the one set of options that we
 // always use when we are talking to the FPGA. Both RX and TX are enabled.
@@ -60,15 +62,16 @@ void FpgaSetupSsc(void)
 //-----------------------------------------------------------------------------
 void FpgaSetupSscDma(uint8_t *buf, int len)
 {
+	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTDIS;
+	
 	AT91C_BASE_PDC_SSC->PDC_RPR = (uint32_t) buf;
 	AT91C_BASE_PDC_SSC->PDC_RCR = len;
-
-	// next buffer pointer
 	AT91C_BASE_PDC_SSC->PDC_RNPR = (uint32_t) buf;
 	AT91C_BASE_PDC_SSC->PDC_RNCR = len;
-
-	// enable rx transfer
-	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN | AT91C_PDC_TXTDIS;
+	
+	if (buf != NULL) {
+		AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN;
+	}
 }
 
 static void DownloadFPGA_byte(unsigned char w)
@@ -90,6 +93,7 @@ static void DownloadFPGA(const char *FpgaImage, int FpgaImageLen, int byterevers
 {
 	int i=0;
 
+	// proxmark3lcd uses GPIO_NVDD_ON instead
 	AT91C_BASE_PIOA->PIO_OER = GPIO_NVDD_ON;
 	AT91C_BASE_PIOA->PIO_PER = GPIO_NVDD_ON;
 	HIGH(GPIO_NVDD_ON);		// ensure everything is powered on
