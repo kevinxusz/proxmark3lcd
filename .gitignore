@@ -6,6 +6,11 @@ bootrom/version.c
 client/obj/
 client/.history
 client/proxmark3.log
+client/cli
+client/flasher
+client/proxguiqt.moc.cpp
+client/proxmark3
+client/snooper
 tools/openocd.cfg
 fpga/fpga-placed.ncd
 fpga/fpga-placed.pad

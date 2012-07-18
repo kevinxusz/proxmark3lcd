@@ -254,17 +254,9 @@ void BootROM(void)
 	LED_B_OFF();
 	LED_A_OFF();
 
-	// if 512K FLASH part - TODO make some defines :)
-	if (1 || (AT91C_BASE_DBGU->DBGU_CIDR | 0xf00) == 0xa00) {
-		AT91C_BASE_EFC0->EFC_FMR =
-			AT91C_MC_FWS_1FWS;
-		AT91C_BASE_EFC1->EFC_FMR =
-			AT91C_MC_FWS_1FWS;
-	} else {
-		AT91C_BASE_EFC0->EFC_FMR =\
-			MC_FLASH_MODE_FLASH_WAIT_STATES(0) | 
-			MC_FLASH_MODE_MASTER_CLK_IN_MHZ(48);
-	}
+	// Set flash wait states for proxmark3lcd 512K part
+	AT91C_BASE_EFC0->EFC_FMR = AT91C_MC_FWS_1FWS;
+	AT91C_BASE_EFC1->EFC_FMR = AT91C_MC_FWS_1FWS;
 
 	// Initialize all system clocks
 	ConfigClocks();
