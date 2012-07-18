@@ -1,7 +1,11 @@
 .svn/
 armsrc/obj/
 armsrc/version.c
-bootroom/obj/
+bootrom/obj/
+bootrom/version.c
+client/obj/
+client/.history
+client/proxmark3.log
 tools/openocd.cfg
 fpga/fpga-placed.ncd
 fpga/fpga-placed.pad
