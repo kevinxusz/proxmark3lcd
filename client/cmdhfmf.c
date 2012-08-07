@@ -1542,6 +1542,13 @@ int CmdHF14AMfCSave(const char *Cmd) {
 }
 
 int CmdHF14AMfSniff(const char *Cmd){
+	// params
+	bool wantLogToFile = 0;
+	bool wantDecrypt = 0;
+	//bool wantSaveToEml = 0; TODO
+	bool wantSaveToEmlFile = 0;
+
+	//var 
 	int res = 0;
 	int len = 0;
 	int blockLen = 0;
@@ -1551,15 +1558,30 @@ int CmdHF14AMfSniff(const char *Cmd){
 	uint8_t atqa[2];
 	uint8_t sak;
 	bool isTag;
+	uint32_t parity;
 	uint8_t buf[3000];
 	uint8_t * bufPtr = buf;
 	memset(buf, 0x00, 3000);
 	
 	if (param_getchar(Cmd, 0) == 'h') {
-		PrintAndLog("Usage:  hf mf sniff ");
-		PrintAndLog("        sample: hf mf sniff ");
+		PrintAndLog("It continuously get data from the field and saves it to: log, emulator, emulator file.");
+		PrintAndLog("You can specify:");
+		PrintAndLog("    l - save encrypted sequence to logfile `uid.log`");
+		PrintAndLog("    d - decrypt sequence and put it to log file `uid.log`");
+		PrintAndLog(" n/a   e - decrypt sequence, collect read and write commands and save the result of the sequence to emulator memory");
+		PrintAndLog("    r - decrypt sequence, collect read and write commands and save the result of the sequence to emulator dump file `uid.eml`");
+		PrintAndLog("Usage:  hf mf sniff [l][d][e][r]");
+		PrintAndLog("  sample: hf mf sniff l d e");
 		return 0;
 	}	
+	
+	for (int i = 0; i < 4; i++) {
+		char ctmp = param_getchar(Cmd, i);
+		if (ctmp == 'l' || ctmp == 'L') wantLogToFile = true;
+		if (ctmp == 'd' || ctmp == 'D') wantDecrypt = true;
+		//if (ctmp == 'e' || ctmp == 'E') wantSaveToEml = true; TODO
+		if (ctmp == 'f' || ctmp == 'F') wantSaveToEmlFile = true;
+	}
 	
 	printf("-------------------------------------------------------------------------\n");
 	printf("Executing command. \n");
@@ -1604,16 +1626,26 @@ int CmdHF14AMfSniff(const char *Cmd){
 				num = 0;
 				while (bufPtr - buf + 9 < blockLen) {
 				  isTag = bufPtr[3] & 0x80 ? true:false;
-					bufPtr += 8;
+					bufPtr += 4;
+					parity = *((uint32_t *)(bufPtr));
+					bufPtr += 4;
 					len = bufPtr[0];
 					bufPtr++;
 					if ((len == 14) && (bufPtr[0] = 0xff) && (bufPtr[1] = 0xff)) {
 						memcpy(uid, bufPtr + 2, 7);
 						memcpy(atqa, bufPtr + 2 + 7, 2);
 						sak = bufPtr[11];
+						
 						PrintAndLog("tag select uid:%s atqa:%02x %02x sak:0x%02x", sprint_hex(uid, 7), atqa[0], atqa[1], sak);
+						if (wantLogToFile) {
+							FillFileNameByUID(logHexFileName, uid, ".log", 7);
+							AddLogCurrentDT(logHexFileName);
+						}						
+						if (wantDecrypt) mfTraceInit(uid, atqa, sak, wantSaveToEmlFile);
 					} else {
 						PrintAndLog("%s(%d):%s", isTag ? "TAG":"RDR", num, sprint_hex(bufPtr, len));
+						if (wantLogToFile) AddLogHex(logHexFileName, isTag ? "TAG: ":"RDR: ", bufPtr, len);
+						if (wantDecrypt) mfTraceDecode(bufPtr, len, parity, wantSaveToEmlFile);
 					}
 					bufPtr += len;
 					num++;

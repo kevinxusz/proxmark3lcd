@@ -2416,7 +2416,7 @@ void RAMFUNC SniffMifare(uint8_t param) {
 		
 		if (++sniffCounter > 65) {
 			if (MfSniffSend(2000)) {
-				AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN;
+				FpgaEnableSscDma();
 			}
 			sniffCounter = 0;
 		}
@@ -2442,7 +2442,7 @@ void RAMFUNC SniffMifare(uint8_t param) {
 		if (!AT91C_BASE_PDC_SSC->PDC_RCR) {
 			AT91C_BASE_PDC_SSC->PDC_RPR = (uint32_t) dmaBuf;
 			AT91C_BASE_PDC_SSC->PDC_RCR = DMA_BUFFER_SIZE;
-			Dbprintf("RxEmpty ERROR!!! %d", dataLen); // temporary
+			Dbprintf("RxEmpty ERROR!!! data length:%d", dataLen); // temporary
 		}
 		// secondary buffer sets as primary, secondary buffer was stopped
 		if (!AT91C_BASE_PDC_SSC->PDC_RNCR) {
@@ -2455,7 +2455,7 @@ void RAMFUNC SniffMifare(uint8_t param) {
 		if(MillerDecoding((data[0] & 0xF0) >> 4)) {
 			LED_C_INV();
 			// check - if there is a short 7bit request from reader
-			if (MfSniffLogic(receivedCmd, Uart.byteCnt, Uart.bitCnt, TRUE)) break;
+			if (MfSniffLogic(receivedCmd, Uart.byteCnt, Uart.parityBits, Uart.bitCnt, TRUE)) break;
 
 			/* And ready to receive another command. */
 			Uart.state = STATE_UNSYNCD;
@@ -2467,7 +2467,7 @@ void RAMFUNC SniffMifare(uint8_t param) {
 		if(ManchesterDecoding(data[0] & 0x0F)) {
 			LED_C_INV();
 
-			if (MfSniffLogic(receivedResponse, Demod.len, Uart.bitCnt, FALSE)) break;
+			if (MfSniffLogic(receivedResponse, Demod.len, Demod.parityBits, Demod.bitCount, FALSE)) break;
 
 			// And ready to receive another response.
 			memset(&Demod, 0, sizeof(Demod));
@@ -2487,10 +2487,9 @@ void RAMFUNC SniffMifare(uint8_t param) {
 	DbpString("COMMAND FINISHED");
 
 done:
-	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTDIS;
+	FpgaDisableSscDma();
 	MfSniffEnd();
 	
-	Dbprintf("maxDataLen=%x, Uart.state=%x, Uart.byteCnt=%x", maxDataLen, Uart.state, Uart.byteCnt);
-	Dbprintf("Uart.byteCntMax=%x, traceLen=%x", Uart.byteCntMax, traceLen);
+	Dbprintf("maxDataLen=%x, Uart.state=%x, Uart.byteCnt=%x Uart.byteCntMax=%x", maxDataLen, Uart.state, Uart.byteCnt, Uart.byteCntMax);
 	LEDsoff();
 }

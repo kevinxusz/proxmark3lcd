@@ -40,9 +40,9 @@ int MfSniffEnd(void){
 	return 0;
 }
 
-int RAMFUNC MfSniffLogic(const uint8_t * data, int len, int bitCnt, int reader) {
+int RAMFUNC MfSniffLogic(const uint8_t * data, int len, uint32_t parity, int bitCnt, int reader) {
 
-	if ((len == 1) && (bitCnt = 9)) { 
+	if ((len == 1) && (bitCnt = 9) && (data[0] > 0x0F)) { 
 		sniffState = SNF_INIT;
 	}
 
@@ -121,18 +121,18 @@ int RAMFUNC MfSniffLogic(const uint8_t * data, int len, int bitCnt, int reader) 
 			sniffBuf[11] = sniffSAK;
 			sniffBuf[12] = 0xFF;
 			sniffBuf[13] = 0xFF;
-			LogTrace(sniffBuf, 14, 0, 0, true);
+			LogTrace(sniffBuf, 14, 0, parity, true);
 			timerData = GetTickCount();
 		}
 		case SNF_CARD_CMD:{
-			LogTrace(data, len, 0, 0, true);
+			LogTrace(data, len, 0, parity, true);
 
 			sniffState = SNF_CARD_RESP;
 			timerData = GetTickCount();
 			break;
 		}
 		case SNF_CARD_RESP:{
-			LogTrace(data, len, 0, 0, false);
+			LogTrace(data, len, 0, parity, false);
 
 			sniffState = SNF_CARD_CMD;
 			timerData = GetTickCount();
@@ -163,7 +163,7 @@ int intMfSniffSend() {
 	
 	if (!traceLen) return 0;
 
-	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTDIS;
+	FpgaDisableSscDma();
 
 	while (pckLen > 0) {
 		pckSize = min(32, pckLen);
