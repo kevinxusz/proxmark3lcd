@@ -3,7 +3,8 @@ proxmark3lcd
 
 This repository contains working code for a Proxmark3 LCD device to read/write/emulate RFID tags.
 
-Currently, only 125kHz HID tags have been successfully read and emulated.
+Currently, only 125kHz HID ProxCard II tags have been successfully read and emulated.
+Additionally, a 13.56MHz HID iClass tag has also been successfully read.
 
 This project incorporates code from two sources:
 
