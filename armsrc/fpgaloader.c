@@ -8,6 +8,7 @@
 // Routines to load the FPGA image, and then to configure the FPGA's major
 // mode once it is configured.
 //-----------------------------------------------------------------------------
+
 #include "proxmark3.h"
 #include "apps.h"
 #include "util.h"
@@ -60,18 +61,20 @@ void FpgaSetupSsc(void)
 // ourselves, not to another buffer). The stuff to manipulate those buffers
 // is in apps.h, because it should be inlined, for speed.
 //-----------------------------------------------------------------------------
-void FpgaSetupSscDma(uint8_t *buf, int len)
+bool FpgaSetupSscDma(uint8_t *buf, int len)
 {
+	if (buf == NULL) {
+		return false;
+	}
+
 	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTDIS;
-	
 	AT91C_BASE_PDC_SSC->PDC_RPR = (uint32_t) buf;
 	AT91C_BASE_PDC_SSC->PDC_RCR = len;
 	AT91C_BASE_PDC_SSC->PDC_RNPR = (uint32_t) buf;
 	AT91C_BASE_PDC_SSC->PDC_RNCR = len;
-	
-	if (buf != NULL) {
-		AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN;
-	}
+	AT91C_BASE_PDC_SSC->PDC_PTCR = AT91C_PDC_RXTEN;
+
+	return true;
 }
 
 static void DownloadFPGA_byte(unsigned char w)
