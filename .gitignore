@@ -21,7 +21,6 @@ fpga/fpga-placed.xpi
 fpga/fpga-placed_pad.csv
 fpga/fpga-placed_pad.txt
 fpga/fpga.bgn
-fpga/fpga.bit
 fpga/fpga.bld
 fpga/fpga.drc
 fpga/fpga.map
