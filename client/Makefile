@@ -36,7 +36,7 @@ QTGUI = $(OBJDIR)/proxgui.o $(OBJDIR)/proxguiqt.o $(OBJDIR)/proxguiqt.moc.o
 CFLAGS += -DHAVE_GUI
 LINK.o = $(LINK.cpp)
 else
-QTGUI = guidummy.o
+QTGUI = $(OBJDIR)/guidummy.o
 endif
 
 CMDSRCS = \
